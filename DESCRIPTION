@@ -1,0 +1,8 @@
+mvname: rename a set of files using a naming pattern
+mvname: rename a set of files using a naming pattern
+used in eagle workspaces to rename a whole set of files (board, schematic, gerbers, etc)
+start with:
+    foo.sch, foo.brd, foo.parts.txt foo1234.txt
+mvname foo bar
+    bar.sch, bar.brd, bar.parts.txt bar1234.txt
+
