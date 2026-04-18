@@ -33,11 +33,10 @@ do_rename() {
 	done
 }
 
-if [ $recurse -ne 0 ]; then
-	dirs=`find . -depth -type d -print | grep -v "^.$"`
-	for d in $dirs; do
+if [ "$recurse" -ne 0 ]; then
+	find . -depth -type d -print | while IFS= read -r d; do
 		(
-		cd $d
+		cd "$d" || exit
 		do_rename "$oname" "$nname"
 		)
 	done
