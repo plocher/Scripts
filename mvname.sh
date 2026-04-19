@@ -151,6 +151,45 @@ is_excluded_kicad_path() {
 	return 1
 }
 
+detect_rewrite_backend() {
+	if command -v perl >/dev/null 2>&1; then
+		rewrite_backend="perl"
+	elif command -v python3 >/dev/null 2>&1; then
+		rewrite_backend="python3"
+	else
+		die "KiCad content rewrite requires perl or python3"
+	fi
+}
+
+rewrite_file_content() {
+	f="$1"
+
+	case "$rewrite_backend" in
+		perl)
+			ONAME="$oname" NNAME="$nname" perl -i -pe 's/\Q$ENV{ONAME}\E/$ENV{NNAME}/g' "$f" || return 1
+			;;
+		python3)
+			ONAME="$oname" NNAME="$nname" python3 - "$f" <<'PY' || return 1
+import os
+import sys
+
+path = sys.argv[1]
+old = os.environ["ONAME"].encode("utf-8")
+new = os.environ["NNAME"].encode("utf-8")
+
+with open(path, "rb") as fh:
+    data = fh.read()
+
+with open(path, "wb") as fh:
+    fh.write(data.replace(old, new))
+PY
+			;;
+		*)
+			return 1
+			;;
+	esac
+}
+
 rename_kicad_paths() {
 	find . -depth -name "${oname}*" -print | while IFS= read -r src; do
 		is_excluded_kicad_path "$src" && continue
@@ -184,7 +223,7 @@ rewrite_kicad_content() {
 			-name "fp-info-cache" \
 		\) -print | while IFS= read -r f; do
 		is_excluded_kicad_path "$f" && continue
-		ONAME="$oname" NNAME="$nname" perl -i -pe 's/\Q$ENV{ONAME}\E/$ENV{NNAME}/g' "$f" || exit 1
+			rewrite_file_content "$f" || exit 1
 	done
 }
 
@@ -193,6 +232,7 @@ kicad_rename() {
 		backup_path=`create_kicad_backup` || die "failed creating pre-rename safety backup"
 		printf 'mvname: created safety backup %s\n' "$backup_path" >&2
 	fi
+	detect_rewrite_backend || die "failed selecting rewrite backend"
 	rename_kicad_paths || die "failed renaming KiCad project paths"
 	rewrite_kicad_content || die "failed rewriting KiCad project content"
 

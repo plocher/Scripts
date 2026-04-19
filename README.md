@@ -107,6 +107,6 @@ Clone and retarget but keep history/backups:
 `0` on success, non-zero on error.
 
 ## NOTES
-- `mvname` requires `perl` for in-file rewrite operations.
+- `mvname` uses `perl` for in-file rewrite operations when available, with a `python3` fallback.
 - For backups, `zip` is preferred; `tar.gz` is used as fallback.
 - In KiCad mode, path overwrite conflicts abort with an error.
