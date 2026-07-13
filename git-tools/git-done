@@ -1,0 +1,49 @@
+#!/bin/zsh
+# Switch to main and pull, then clean up the merged feature branch.
+#
+# Cleanup resolution order:
+#   1. git-cleanup-merged on PATH (canonical: Scripts/git-tools/post_merge_cleanup.py)
+#   2. repo-local scripts/post_merge_cleanup.py (legacy fallback)
+#
+# The cleanup tool is safe by construction: it refuses to delete branches
+# whose commits are not patch-equivalent to main (git cherry check).
+
+LOCAL_CLEAN_SCRIPT="scripts/post_merge_cleanup.py"
+
+cleanup_branch() {
+	local repo=$1 branch=$2
+	if command -v git-cleanup-merged > /dev/null 2>&1; then
+		git-cleanup-merged --branch "${branch}"
+	elif [ -f "${repo}/${LOCAL_CLEAN_SCRIPT}" ]; then
+		python3 "${repo}/${LOCAL_CLEAN_SCRIPT}" --branch "${branch}"
+	else
+		echo "No cleanup tool found; leaving branch ${branch} in place."
+	fi
+}
+
+if [[ -n "$1" ]] && [[ "$1" == "one-line-help" ]]; then
+	echo "switch to main and pull new content if branch is clean"
+else
+	bold=$( tput bold )
+	normal=$( tput sgr0 )
+	if git rev-parse --git-dir > /dev/null 2>&1; then
+	    REPO=$(git rev-parse --show-toplevel)
+	    mybranch=$( git branch --show-current )
+	    dirty=$( git status --porcelain )
+	    echo "On branch ${bold}${mybranch}${normal}"
+	    if [[ -n "$dirty" ]]; then
+	      echo "  This branch is DIRTY:"
+	      git status
+	    else
+	      echo "  This branch is clean"
+	      if [[ "${mybranch}" != "main" ]]; then
+	          git switch main
+	          git pull
+	          git branch --show-current
+	          cleanup_branch "${REPO}" "${mybranch}"
+	      fi
+	    fi
+	else
+	    echo "\"$(pwd)\" is not a Git repository."
+	fi
+fi

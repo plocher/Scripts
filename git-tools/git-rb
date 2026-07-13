@@ -1,0 +1,12 @@
+#!/bin/zsh
+if [[ -n "$1" ]] && [[ "$1" == "one-line-help" ]]; then
+	echo "Rebase branch with head of main"
+else
+	mybranch=$( git branch --show-current )
+	devbranch=$( git branch --format='%(refname:short)' | grep main | sort -r | head -n 1 )
+	echo "Rebase $mybranch with HEAD of $devbranch?"
+	echo git pull --rebase origin "$devbranch" " ?\\c"; read line
+	git fetch
+	git pull --rebase origin "$devbranch"
+
+fi

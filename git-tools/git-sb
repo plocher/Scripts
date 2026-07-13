@@ -1,0 +1,17 @@
+#!/bin/zsh
+if [[ -n "$1" ]] && [[ "$1" == "one-line-help" ]]; then
+	echo "Select a branch to switch to"
+else
+	echo "Available branches:"
+	echo "=================="
+	branches=(${(f)"$(git branch --format='%(refname:short)')"})
+	select branch in "${branches[@]}"; do
+	    if [ -n "$branch" ]; then
+		git checkout "$branch"
+		break
+	    else
+		echo "Invalid selection."
+	    fi
+	done
+fi
+
